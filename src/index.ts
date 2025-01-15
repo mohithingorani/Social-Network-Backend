@@ -398,6 +398,10 @@ app.post("/friend/remove", async (req, res) => {
 
 // Start the server
 const PORT: number = parseInt(process.env.PORT as string) || 3000;
-server.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+if (!process.env.VERCEL) {
+  server.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+  });  
+}
+
+export default app;
