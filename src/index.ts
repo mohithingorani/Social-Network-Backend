@@ -298,18 +298,21 @@ app.post("/create/message", async (req, res) => {
   const message = req.body.message;
   const userName = req.body.userName;
   const roomName = req.body.roomName;
+  console.log("create/message body:", req.body);
+  const time = req.body.time;
   try {
     const chat = await prisma.chat.create({
       data: {
         message,
         userName,
         roomName,
+        time,
       },
     });
-    res.send({ message: "Message created successfully", chat }).status(200);
+    res.status(200).send({ message: "Message created successfully", chat });
   } catch (e) {
-    console.log(e);
-    res.send({ message: "Error creating message" }).status(500);
+    console.log("Prisma error", e);
+    res.status(500).send({ message: "Error creating message" });
   }
 });
 
@@ -338,10 +341,11 @@ io.on("connection", (socket: Socket) => {
       message: string,
       roomName: string,
       id: string,
-      currentTime: string,  
+      currentTime: string,
       userName: string
     ) => {
       io.to(roomName).emit("message", message, id, currentTime, userName);
+      console.log(message);
     }
   );
 
@@ -358,6 +362,38 @@ io.on("connection", (socket: Socket) => {
   socket.on("disconnect", () => {
     console.log("User disconnected");
   });
+});
+
+app.post("/friend/remove", async (req, res) => {
+  const myUserName = req.body.myUserName as string;
+  const friendUserName = req.body.friendUserName as string;
+  try {
+    const removeFriend = prisma.friend.deleteMany({
+      where: {
+        OR: [
+          {
+            user: {
+              username: myUserName,
+            },
+            friend: {
+              username: friendUserName,
+            },
+          },
+          {
+            user: {
+              username: friendUserName,
+            },
+            friend: {
+              username: myUserName,
+            },
+          },
+        ],
+      },
+    });
+    res.json({ message: "Friend removed",removeFriend });
+  } catch (err) {
+    console.log("Error deleting friend", err);
+  }
 });
 
 // Start the server

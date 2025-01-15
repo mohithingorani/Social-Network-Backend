@@ -45,7 +45,7 @@ model Friend {
 model Chat {
   id       Int      @id @default(autoincrement())
   message  String
-  time     DateTime @default(now())
+  time     String
   userName String
   roomName String
 }

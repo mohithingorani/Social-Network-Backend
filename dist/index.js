@@ -292,19 +292,22 @@ app.post("/create/message", (req, res) => __awaiter(void 0, void 0, void 0, func
     const message = req.body.message;
     const userName = req.body.userName;
     const roomName = req.body.roomName;
+    console.log("create/message body:", req.body);
+    const time = req.body.time;
     try {
         const chat = yield prisma.chat.create({
             data: {
                 message,
                 userName,
                 roomName,
+                time,
             },
         });
-        res.send({ message: "Message created successfully", chat }).status(200);
+        res.status(200).send({ message: "Message created successfully", chat });
     }
     catch (e) {
-        console.log(e);
-        res.send({ message: "Error creating message" }).status(500);
+        console.log("Prisma error", e);
+        res.status(500).send({ message: "Error creating message" });
     }
 }));
 app.get("/messages", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -327,6 +330,7 @@ io.on("connection", (socket) => {
     console.log("User connected");
     socket.on("message", (message, roomName, id, currentTime, userName) => {
         io.to(roomName).emit("message", message, id, currentTime, userName);
+        console.log(message);
     });
     socket.on("joinRoom", (roomName) => {
         console.log("Joining room: " + roomName);
@@ -340,6 +344,38 @@ io.on("connection", (socket) => {
         console.log("User disconnected");
     });
 });
+app.post("/friend/remove", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const myUserName = req.body.myUserName;
+    const friendUserName = req.body.friendUserName;
+    try {
+        const removeFriend = prisma.friend.deleteMany({
+            where: {
+                OR: [
+                    {
+                        user: {
+                            username: myUserName,
+                        },
+                        friend: {
+                            username: friendUserName,
+                        },
+                    },
+                    {
+                        user: {
+                            username: friendUserName,
+                        },
+                        friend: {
+                            username: myUserName,
+                        },
+                    },
+                ],
+            },
+        });
+        res.json({ message: "Friend removed", removeFriend });
+    }
+    catch (err) {
+        console.log("Error deleting friend", err);
+    }
+}));
 // Start the server
 const PORT = parseInt(process.env.PORT) || 3000;
 server.listen(PORT, () => {
