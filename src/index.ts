@@ -17,7 +17,7 @@ const server = http.createServer(app);
 // Create a new instance of Socket.IO and pass the server instance
 const io = new SocketIOServer(server, {
   cors: {
-    origin: "*",
+    origin: "https://blackberry-cranberry.vercel.app/",
     methods: ["GET", "POST"],
   },
 });
