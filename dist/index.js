@@ -378,6 +378,9 @@ app.post("/friend/remove", (req, res) => __awaiter(void 0, void 0, void 0, funct
 }));
 // Start the server
 const PORT = parseInt(process.env.PORT) || 3000;
-server.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
-});
+if (!process.env.VERCEL) {
+    server.listen(PORT, () => {
+        console.log(`Server listening on port ${PORT}`);
+    });
+}
+exports.default = app;
