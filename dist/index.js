@@ -16,6 +16,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
 require("dotenv").config();
 const express_1 = __importDefault(require("express"));
 const http_1 = __importDefault(require("http"));
+const winston_1 = __importDefault(require("winston"));
+// Create a logger with multiple transports
+const logger = winston_1.default.createLogger({
+    level: 'info',
+    format: winston_1.default.format.combine(winston_1.default.format.colorize(), // Adds color to log levels
+    winston_1.default.format.timestamp({
+        format: 'YYYY-MM-DD HH:mm:ss', // Format of timestamp
+    }), winston_1.default.format.printf(({ timestamp, level, message }) => {
+        return `${timestamp} [${level}]: ${message}`;
+    })),
+    transports: [
+        new winston_1.default.transports.Console({
+            format: winston_1.default.format.simple(), // For console logs
+        }),
+        new winston_1.default.transports.File({ filename: 'logs/app.log' }), // For file logs
+    ],
+});
 var cors = require("cors");
 const socket_io_1 = require("socket.io");
 const client_1 = require("@prisma/client");
@@ -27,11 +44,16 @@ const server = http_1.default.createServer(app);
 // Create a new instance of Socket.IO and pass the server instance
 const io = new socket_io_1.Server(server, {
     cors: {
-        origin: "*",
-        methods: ["GET", "POST"],
+        origin: "https://blackberry-cranberry.vercel.app",
+        methods: ["GET", "POST", "OPTIONS"],
+        optionsSuccessStatus: 200,
     },
 });
 const prisma = new client_1.PrismaClient();
+app.get("/test", (req, res) => {
+    logger.info("new");
+    res.send("test");
+});
 app.get("/user", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userEmail = req.query.email;
     const userExists = yield prisma.user.findUnique({
@@ -40,11 +62,11 @@ app.get("/user", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         },
     });
     if (userExists) {
-        console.log("User exists");
+        logger.info("User exists", userEmail);
         res.send(true);
     }
     else {
-        console.log("User does not exist");
+        logger.info("User does not exist", userEmail);
         res.send(false);
     }
 }));
@@ -74,7 +96,7 @@ app.post("/friend/request", (req, res) => __awaiter(void 0, void 0, void 0, func
         },
     });
     if (friendRequestExists) {
-        console.log("Friend request already exists");
+        logger.info("Friend request already exists");
         res
             .send({ message: "Friend request already exists", exists: true })
             .status(400);
@@ -87,7 +109,7 @@ app.post("/friend/request", (req, res) => __awaiter(void 0, void 0, void 0, func
             },
         });
         if (friendRequest) {
-            console.log("Friend request sent successfully");
+            logger.info("Friend request sent successfully");
             res
                 .send({ message: "Friend request sent successfully", friendRequest })
                 .status(200);
@@ -97,7 +119,7 @@ app.post("/friend/request", (req, res) => __awaiter(void 0, void 0, void 0, func
 //show friend requests
 app.get("/friend/requests", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const username = req.query.username;
-    console.log("username is " + username);
+    logger.info("username is " + username);
     try {
         const users = yield prisma.friendRequest.findMany({
             where: {
@@ -124,14 +146,14 @@ app.get("/friend/requests", (req, res) => __awaiter(void 0, void 0, void 0, func
                 },
             },
         });
-        console.log(users);
+        logger.info(users);
         res.send({
             message: "Recieved Requests",
             requests: users,
         });
     }
     catch (e) {
-        console.log(e);
+        logger.info(e);
         res.send({ message: "Error fetching requests" }).status(500);
     }
 }));
@@ -173,15 +195,15 @@ app.post("/friend/accept", (req, res) => __awaiter(void 0, void 0, void 0, funct
         });
     }
     catch (e) {
-        console.error("Error accepting friend request:", e);
+        logger.error("Error accepting friend request:", e);
         res.status(500).send({ message: "Error accepting friend request" });
     }
 }));
 app.get("/users/search", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const username = req.query.username;
     const selfUsername = req.query.selfUsername;
-    console.log("username is " + username);
-    console.log("self username is " + selfUsername);
+    logger.info("username is " + username);
+    logger.info("self username is " + selfUsername);
     try {
         const users = yield prisma.user.findMany({
             where: {
@@ -198,11 +220,11 @@ app.get("/users/search", (req, res) => __awaiter(void 0, void 0, void 0, functio
                 picture: true,
             },
         });
-        console.log("Users fetched successfully");
+        logger.info("Users fetched successfully");
         res.status(200).send(users);
     }
     catch (err) {
-        console.error(err);
+        logger.error(err);
         res.status(500).send({ message: "Error fetching users" });
     }
 }));
@@ -235,7 +257,7 @@ app.get("/user/friends", (req, res) => __awaiter(void 0, void 0, void 0, functio
         });
     }
     catch (e) {
-        console.error("Error fetching friends:", e);
+        logger.error("Error fetching friends:", e);
         res.status(500).send({ message: "Error fetching friends" });
     }
 }));
@@ -247,11 +269,11 @@ app.get("/user/details", (req, res) => __awaiter(void 0, void 0, void 0, functio
                 email: email,
             },
         });
-        console.log("User details fetched successfully");
+        logger.info("User details fetched successfully");
         res.send(userDetails).status(200);
     }
     catch (err) {
-        console.log(err);
+        logger.info(err);
         res.send({ message: "Error fetching user details" }).status(500);
     }
 }));
@@ -279,12 +301,12 @@ app.post("/createUser", (req, res) => __awaiter(void 0, void 0, void 0, function
                 username: userName,
             },
         });
-        console.log("User created successfully");
+        logger.info("User created successfully");
         res.send({ message: "User created successfully", user: user }).status(200);
     }
     catch (e) {
-        console.log(e);
-        console.log("Error creating user");
+        logger.info(e);
+        logger.info("Error creating user");
         res.send({ message: "Error creating user" }).status(500);
     }
 }));
@@ -292,7 +314,7 @@ app.post("/create/message", (req, res) => __awaiter(void 0, void 0, void 0, func
     const message = req.body.message;
     const userName = req.body.userName;
     const roomName = req.body.roomName;
-    console.log("create/message body:", req.body);
+    logger.info("create/message body:", req.body);
     const time = req.body.time;
     try {
         const chat = yield prisma.chat.create({
@@ -306,7 +328,7 @@ app.post("/create/message", (req, res) => __awaiter(void 0, void 0, void 0, func
         res.status(200).send({ message: "Message created successfully", chat });
     }
     catch (e) {
-        console.log("Prisma error", e);
+        logger.info("Prisma error", e);
         res.status(500).send({ message: "Error creating message" });
     }
 }));
@@ -321,27 +343,27 @@ app.get("/messages", (req, res) => __awaiter(void 0, void 0, void 0, function* (
         res.send({ message: "Messages fetched successfully", chats }).status(200);
     }
     catch (e) {
-        console.log(e);
+        logger.info(e);
         res.send({ message: "Error fetching messages" }).status(500);
     }
 }));
 // Socket.IO event listeners
 io.on("connection", (socket) => {
-    console.log("User connected");
+    logger.info("User connected");
     socket.on("message", (message, roomName, id, currentTime, userName) => {
         io.to(roomName).emit("message", message, id, currentTime, userName);
-        console.log(message);
+        logger.info(message);
     });
     socket.on("joinRoom", (roomName) => {
-        console.log("Joining room: " + roomName);
+        logger.info("Joining room: " + roomName);
         socket.join(roomName);
     });
     socket.on("enter", (roomName, userName) => {
-        console.log(userName + " entered room: " + roomName);
+        logger.info(userName + " entered room: " + roomName);
         io.to(roomName).emit("enter", userName);
     });
     socket.on("disconnect", () => {
-        console.log("User disconnected");
+        logger.info("User disconnected");
     });
 });
 app.post("/friend/remove", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -373,11 +395,14 @@ app.post("/friend/remove", (req, res) => __awaiter(void 0, void 0, void 0, funct
         res.json({ message: "Friend removed", removeFriend });
     }
     catch (err) {
-        console.log("Error deleting friend", err);
+        logger.info("Error deleting friend", err);
     }
 }));
 // Start the server
-const PORT = parseInt(process.env.PORT) || 3000;
-server.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
-});
+const PORT = parseInt(process.env.PORT) || 3004;
+if (!process.env.VERCEL) {
+    server.listen(PORT, () => {
+        logger.info(`Server listening on port ${PORT}`);
+    });
+}
+exports.default = app;
