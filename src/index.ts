@@ -3,15 +3,15 @@ require("dotenv").config();
 import express from "express";
 import http from "http";
 
-import winston from 'winston';
+import winston from "winston";
 
 // Create a logger with multiple transports
 const logger = winston.createLogger({
-  level: 'info',
+  level: "info",
   format: winston.format.combine(
-    winston.format.colorize(),  // Adds color to log levels
+    winston.format.colorize(), // Adds color to log levels
     winston.format.timestamp({
-      format: 'YYYY-MM-DD HH:mm:ss',  // Format of timestamp
+      format: "YYYY-MM-DD HH:mm:ss", // Format of timestamp
     }),
     winston.format.printf(({ timestamp, level, message }) => {
       return `${timestamp} [${level}]: ${message}`;
@@ -21,7 +21,7 @@ const logger = winston.createLogger({
     new winston.transports.Console({
       format: winston.format.simple(), // For console logs
     }),
-    new winston.transports.File({ filename: 'logs/app.log' }), // For file logs
+    new winston.transports.File({ filename: "logs/app.log" }), // For file logs
   ],
 });
 var cors = require("cors");
@@ -47,13 +47,10 @@ const io = new SocketIOServer(server, {
 
 const prisma = new PrismaClient();
 
-
-app.get("/test",(req,res)=>{
+app.get("/test", (req, res) => {
   logger.info("new");
   res.send("test");
-
-})
-
+});
 
 app.get("/user", async (req, res) => {
   const userEmail = req.query.email as string;
@@ -64,10 +61,10 @@ app.get("/user", async (req, res) => {
   });
 
   if (userExists) {
-    logger.info("User exists",userEmail);
+    logger.info("User exists", userEmail);
     res.send(true);
   } else {
-    logger.info("User does not exist",userEmail);
+    logger.info("User does not exist", userEmail);
     res.send(false);
   }
 });
@@ -256,7 +253,7 @@ app.get("/user/friends", async (req, res) => {
             picture: true,
             id: true,
             name: true,
-            onlineStatus:true
+            onlineStatus: true,
           },
         },
       },
@@ -289,7 +286,6 @@ app.get("/user/details", async (req, res) => {
     res.send({ message: "Error fetching user details" }).status(500);
   }
 });
-
 
 app.post("/createUser", async (req, res) => {
   const email = req.body.email;
@@ -348,6 +344,33 @@ app.post("/create/message", async (req, res) => {
     res.status(500).send({ message: "Error creating message" });
   }
 });
+
+app.post("/onlinestatus", (req, res) => {
+  const date = new Date();
+  const email = req.body.email;
+
+  try{
+    const lastActive = prisma.user.update({
+      where: {
+        email: email,
+      },
+      data: {
+        lastOnline: date,
+        onlineStatus:true
+      },
+    });
+  
+    res.json({
+      lastActive
+    }).status(200);
+  }catch(error){
+    console.log(error);
+    res.status(500).send({ message: "Error updating online status" });
+  }
+  
+});
+
+
 
 app.get("/messages", async (req, res) => {
   const roomName = req.query.roomName as string;
@@ -423,7 +446,7 @@ app.post("/friend/remove", async (req, res) => {
         ],
       },
     });
-    res.json({ message: "Friend removed",removeFriend });
+    res.json({ message: "Friend removed", removeFriend });
   } catch (err) {
     logger.info("Error deleting friend", err);
   }
@@ -434,7 +457,7 @@ const PORT: number = parseInt(process.env.PORT as string) || 3000;
 if (!process.env.VERCEL) {
   server.listen(PORT, () => {
     logger.info(`Server listening on port ${PORT}`);
-  });  
+  });
 }
 
 export default app;
