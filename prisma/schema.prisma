@@ -19,6 +19,7 @@ model User {
   receivedRequests FriendRequest[] @relation("ReceivedRequests")
   friends          Friend[]        @relation("UserFriends")
   friendOf         Friend[]        @relation("FriendOf")
+  onlineStatus     Boolean         @default(false)
 }
 
 model FriendRequest {
@@ -43,10 +44,9 @@ model Friend {
 }
 
 model Chat {
-  id       Int      @id @default(autoincrement())
+  id       Int    @id @default(autoincrement())
   message  String
   time     String
   userName String
   roomName String
 }
-  

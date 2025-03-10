@@ -257,6 +257,7 @@ app.get("/user/friends", async (req, res) => {
             picture: true,
             id: true,
             name: true,
+            onlineStatus:true
           },
         },
       },
