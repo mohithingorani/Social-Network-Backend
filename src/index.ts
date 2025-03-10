@@ -161,7 +161,6 @@ app.get("/friend/requests", async (req, res) => {
 });
 
 //accept friend request
-//accept friend request
 app.post("/friend/accept", async (req, res) => {
   const { senderId, receiverId, requestId } = req.body;
 
@@ -290,6 +289,8 @@ app.get("/user/details", async (req, res) => {
     res.send({ message: "Error fetching user details" }).status(500);
   }
 });
+
+
 app.post("/createUser", async (req, res) => {
   const email = req.body.email;
   const name = req.body.name;
