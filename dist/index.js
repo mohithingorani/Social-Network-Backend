@@ -19,10 +19,10 @@ const http_1 = __importDefault(require("http"));
 const winston_1 = __importDefault(require("winston"));
 // Create a logger with multiple transports
 const logger = winston_1.default.createLogger({
-    level: 'info',
+    level: "info",
     format: winston_1.default.format.combine(winston_1.default.format.colorize(), // Adds color to log levels
     winston_1.default.format.timestamp({
-        format: 'YYYY-MM-DD HH:mm:ss', // Format of timestamp
+        format: "YYYY-MM-DD HH:mm:ss", // Format of timestamp
     }), winston_1.default.format.printf(({ timestamp, level, message }) => {
         return `${timestamp} [${level}]: ${message}`;
     })),
@@ -30,7 +30,7 @@ const logger = winston_1.default.createLogger({
         new winston_1.default.transports.Console({
             format: winston_1.default.format.simple(), // For console logs
         }),
-        new winston_1.default.transports.File({ filename: 'logs/app.log' }), // For file logs
+        new winston_1.default.transports.File({ filename: "logs/app.log" }), // For file logs
     ],
 });
 var cors = require("cors");
@@ -44,7 +44,7 @@ const server = http_1.default.createServer(app);
 // Create a new instance of Socket.IO and pass the server instance
 const io = new socket_io_1.Server(server, {
     cors: {
-        origin: "https://blackberry-cranberry.vercel.app",
+        origin: "*",
         methods: ["GET", "POST", "OPTIONS"],
         optionsSuccessStatus: 200,
     },
@@ -158,7 +158,6 @@ app.get("/friend/requests", (req, res) => __awaiter(void 0, void 0, void 0, func
     }
 }));
 //accept friend request
-//accept friend request
 app.post("/friend/accept", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { senderId, receiverId, requestId } = req.body;
     if (!senderId || !receiverId || !requestId) {
@@ -246,6 +245,7 @@ app.get("/user/friends", (req, res) => __awaiter(void 0, void 0, void 0, functio
                         picture: true,
                         id: true,
                         name: true,
+                        onlineStatus: true,
                     },
                 },
             },
@@ -332,6 +332,28 @@ app.post("/create/message", (req, res) => __awaiter(void 0, void 0, void 0, func
         res.status(500).send({ message: "Error creating message" });
     }
 }));
+app.post("/onlinestatus", (req, res) => {
+    const date = new Date();
+    const email = req.body.email;
+    try {
+        const lastActive = prisma.user.update({
+            where: {
+                email: email,
+            },
+            data: {
+                lastOnline: date,
+                onlineStatus: true
+            },
+        });
+        res.json({
+            lastActive
+        }).status(200);
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).send({ message: "Error updating online status" });
+    }
+});
 app.get("/messages", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const roomName = req.query.roomName;
     try {

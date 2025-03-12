@@ -47,10 +47,7 @@ const io = new SocketIOServer(server, {
 
 const prisma = new PrismaClient();
 
-app.get("/test", (req, res) => {
-  logger.info("new");
-  res.send("test");
-});
+
 
 app.get("/user", async (req, res) => {
   const userEmail = req.query.email as string;
